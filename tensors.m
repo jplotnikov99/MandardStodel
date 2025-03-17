@@ -69,7 +69,7 @@ A=Rank1LT[\[Mu],{A0,A1,A2,A3},False,"A"];
 B=Rank1LT[\[Mu],{A0,A1,A2,A3},True,"B"];
 
 
-res=A\[CenterDot]B\[CenterDot]A
+res=A\[CirclePlus]B\[CirclePlus]A
 
 
 Symbolic[res,"L="]
