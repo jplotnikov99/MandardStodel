@@ -18,34 +18,38 @@ Block[{},
 ]
 
 
-Rank1LT[ind_,comp_,cov_,symb_]:={index->ind,components->comp,covariant->cov,symbol->symb};
+RankNLT[ind_,comp_,cov_,symb_]:={index->ind,components->comp,covariant->cov,symbol->symb};
 
 
-CheckOperator[expr__]:=Block[{full},
-	full=ToString[FullForm[expr]];
-	If[StringContainsQ[full,"CirclePlus"],Return["+"]];
-	If[StringContainsQ[full,"CenterDot"],Return[""]];
-	If[StringContainsQ[full,"CircleTimes"],Return["\[CircleTimes]"]];
-	Return[Null];
+CheckOperator[expr__]:=Block[{head},
+	head=Head[expr];
+	If[head==CirclePlus,Return["+"]];
+	If[head==CenterDot,Return[""]];
+	If[head==CircleTimes,Return["\[CircleTimes]"]];
+	Return[""];
 ]
 
 
-Symbolic[expr__,cur_]:=Block[{res=cur,len,cov,ind,symb,operator},
-	If[expr[[1,1]]===index,len=1,len=Length[expr]];
+TensorString[expr__]:=Block[{cov=covariant/.expr,ind=index/.expr, symb=symbol/.expr},
+	Assert[Length[cov]==Length[ind]];
 	Do[
-		cov=covariant/.expr[[it]];
-		ind=index/.expr[[it]];
-		symb=symbol/.expr[[it]];
-		If[it!=1,
-			operator=CheckOperator[expr[[{it-1,it}]]],
-			operator="";
+		If[cov[[jt]],
+			symb=ToString[Superscript[symb,ToString[ind[[jt]]]],FormatType->StandardForm],
+			symb=ToString[Subscript[symb,ToString[ind[[jt]]]],FormatType->StandardForm]
 		];
-		If[cov,
-			res=res<>operator<>ToString[Superscript[symb,ToString[ind]],FormatType->StandardForm],
-			res=res<>operator<>ToString[Subscript[symb,ToString[ind]],FormatType->StandardForm]
-		];
-		Print[res];
-	,{it,len}];
+	,{jt,Length[ind]}];
+	Return[symb];
+]
+
+
+Symbolic[expr__,cur_]:=Block[{res=cur,operator},
+	If[Head[expr]==List,Return[res<>TensorString[expr]]];
+	operator=CheckOperator[expr];
+	Do[
+		If[it!=1,res=res<>operator];
+		res=Symbolic[expr[[it]],res];
+		(*res=res<>TensorString[expr[[it]]];*)
+	,{it,Length[expr]}];
 	Return[res];
 ]
 
@@ -65,14 +69,11 @@ Block[{ind1,ind2,c1={},c2={},res},
 ]
 
 
-A=Rank1LT[\[Mu],{A0,A1,A2,A3},False,"A"];
-B=Rank1LT[\[Mu],{A0,A1,A2,A3},True,"B"];
+A=RankNLT[{\[Mu],\[Nu]},{{A00,A01,A02,A03},{A10,A11,A12,A13},{A20,A21,A22,A23},{A30,A31,A32,A33}},{False,True},"A"];
+B=RankNLT[{\[Nu],\[Mu]},{{A00,A01,A02,A03},{A10,A11,A12,A13},{A20,A21,A22,A23},{A30,A31,A32,A33}},{False,True},"B"];
 
 
-res=A\[CirclePlus]B\[CirclePlus]A
+res=B\[CenterDot]A\[CirclePlus]A;
 
 
 Symbolic[res,"L="]
-
-
-
